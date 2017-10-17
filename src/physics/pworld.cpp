@@ -17,6 +17,7 @@ Copyright (C) 2011, Parsian Robotic Center (eew.aut.ac.ir/~parsian/grsim)
 */
 
 #include "pworld.h"
+#include <QDebug>
 PSurface::PSurface()
 {
   callback = NULL;
@@ -167,12 +168,12 @@ void PWorld::step(dReal dt)
 {
     try {
     dSpaceCollide (space,this,&nearCallback);
-    dWorldStep (world,(dt<0) ? delta_time : dt);
+    dWorldQuickStep (world,(dt<0) ? delta_time : dt);
     dJointGroupEmpty (contactgroup);
     }
     catch (...)
     {
-        //qDebug() << "Some Error Happened;";
+//        qDebug() << "Some Error Happened;";
     }
 }
 
