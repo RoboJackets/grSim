@@ -190,7 +190,7 @@ void ConfigWidget::loadRobotsSettings()
 
 void ConfigWidget::loadRobotSettings(QString team)
 {
-    QString ss = qApp->applicationDirPath()+QString("/../config/")+QString("%1.ini").arg(team);
+    QString ss = qApp->applicationDirPath()+QString("/")+QString("%1.ini").arg(team);
     robot_settings = new QSettings(ss, QSettings::IniFormat);
     robotSettings.RobotCenterFromKicker = robot_settings->value("Geometery/CenterFromKicker", 0.073).toDouble();
     robotSettings.RobotRadius = robot_settings->value("Geometery/Radius", 0.09).toDouble();
@@ -206,7 +206,6 @@ void ConfigWidget::loadRobotSettings(QString team)
     robotSettings.Wheel2Angle = robot_settings->value("Geometery/Wheel2Angle", 135).toDouble();
     robotSettings.Wheel3Angle = robot_settings->value("Geometery/Wheel3Angle", 225).toDouble();
     robotSettings.Wheel4Angle = robot_settings->value("Geometery/Wheel4Angle", 300).toDouble();
-
     robotSettings.BodyMass  = robot_settings->value("Physics/BodyMass", 2).toDouble();
     robotSettings.WheelMass = robot_settings->value("Physics/WheelMass", 0.2).toDouble();
     robotSettings.KickerMass= robot_settings->value("Physics/KickerMass",0.02).toDouble();
@@ -214,7 +213,14 @@ void ConfigWidget::loadRobotSettings(QString team)
     robotSettings.RollerTorqueFactor = robot_settings->value("Physics/RollerTorqueFactor", 0.06f).toDouble();
     robotSettings.RollerPerpendicularTorqueFactor = robot_settings->value("Physics/RollerPerpendicularTorqueFactor", 0.005f).toDouble();
     robotSettings.Kicker_Friction = robot_settings->value("Physics/KickerFriction", 0.8f).toDouble();
-    robotSettings.WheelTangentFriction = robot_settings->value("Physics/WheelTangentFriction", 0.8f).toDouble();
+    robotSettings.WheelTangentFriction1 = robot_settings->value("Physics/WheelTangentFriction1", 0.8f).toDouble();
+    robotSettings.WheelTangentFriction2 = robot_settings->value("Physics/WheelTangentFriction2", 0.8f).toDouble();
+    robotSettings.WheelTangentFriction3 = robot_settings->value("Physics/WheelTangentFriction3", 0.8f).toDouble();
+    robotSettings.WheelTangentFriction4 = robot_settings->value("Physics/WheelTangentFriction4", 0.8f).toDouble();
+    robotSettings.WheelHeightOffset1 = robot_settings->value("Physics/WheelHeightOffset1", 0.0f).toDouble();
+    robotSettings.WheelHeightOffset2 = robot_settings->value("Physics/WheelHeightOffset2", 0.0f).toDouble();
+    robotSettings.WheelHeightOffset3 = robot_settings->value("Physics/WheelHeightOffset3", 0.0f).toDouble();
+    robotSettings.WheelHeightOffset4 = robot_settings->value("Physics/WheelHeightOffset4", 0.0f).toDouble();
     robotSettings.WheelPerpendicularFriction = robot_settings->value("Physics/WheelPerpendicularFriction", 0.05f).toDouble();
     robotSettings.Wheel_Motor_FMax = robot_settings->value("Physics/WheelMotorMaximumApplyingTorque", 0.2f).toDouble();
 }

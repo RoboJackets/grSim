@@ -52,7 +52,7 @@ public:
     {
       public:
         int id;
-        Wheel(Robot* robot,int _id,dReal ang,dReal ang2,int wheeltexid);
+        Wheel(Robot* robot,int _id,dReal ang,dReal ang2,int wheeltexid, dReal wheelHeightOffset);
         void step();
         dJointID joint;
         dJointID motor;

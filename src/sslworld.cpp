@@ -23,6 +23,8 @@ Copyright (C) 2011, Parsian Robotic Center (eew.aut.ac.ir/~parsian/grsim)
 
 #include <QDebug>
 
+#include <functional>
+
 #include "logger.h"
 
 #include "grSim_Packet.pb.h"
@@ -54,7 +56,7 @@ int robotIndex(int robot,int team)
     return robot + team*ROBOT_COUNT;
 }
 
-bool wheelCallBack(dGeomID o1,dGeomID o2,PSurface* s)
+bool wheelCallBack(dGeomID o1,dGeomID o2,PSurface* s,double tanfric)
 {
     //s->id2 is ground
     const dReal* r; //wheels rotation matrix
@@ -73,7 +75,7 @@ bool wheelCallBack(dGeomID o1,dGeomID o2,PSurface* s)
 
     s->surface.mode = dContactFDir1 | dContactMu2  | dContactApprox1 | dContactSoftCFM;
     s->surface.mu = fric(_w->cfg->robotSettings.WheelPerpendicularFriction);
-    s->surface.mu2 = fric(_w->cfg->robotSettings.WheelTangentFriction);
+    s->surface.mu2 = fric(tanfric);
     s->surface.soft_cfm = 0.002;
 
     dVector3 v={0,0,1,1};
@@ -274,13 +276,32 @@ SSLWorld::SSLWorld(QGLWidget* parent,ConfigWidget* _cfg,RobotsFomation *form1,Ro
         p->createSurface(robots[k]->dummy,ball);
         //p->createSurface(robots[k]->chassis,ball);
         p->createSurface(robots[k]->kicker->box,ball)->surface = ballwithkicker.surface;
+
+        std::vector<double> wheelFrictions;
+        wheelFrictions.push_back(_w->cfg->robotSettings.WheelTangentFriction1);
+        wheelFrictions.push_back(_w->cfg->robotSettings.WheelTangentFriction2);
+        wheelFrictions.push_back(_w->cfg->robotSettings.WheelTangentFriction3);
+        wheelFrictions.push_back(_w->cfg->robotSettings.WheelTangentFriction4);
+        printf("%f, %f, %f, %f\n", wheelFrictions[0], wheelFrictions[1], wheelFrictions[2], wheelFrictions[3]);
+
         for (int j = 0; j < WHEEL_COUNT; j++)
         {
+            // dReal tangentWheelFriction = wheelFrictions[j];
             p->createSurface(robots[k]->wheels[j]->cyl,ball);
             PSurface* w_g = p->createSurface(robots[k]->wheels[j]->cyl,ground);
             w_g->surface=wheelswithground.surface;
             w_g->usefdir1=true;
-            w_g->callback=wheelCallBack;
+            w_g->callback=std::bind(
+                &wheelCallBack,
+                std::placeholders::_1,
+                std::placeholders::_2,
+                std::placeholders::_3,
+                wheelFrictions[j]
+            );
+            // w_g->callback=wheelCallBack;
+            // w_g->callback=[wheelFrictions, j](dGeomID o1,dGeomID o2,PSurface* s) { 
+            //         return wheelCallBack(o1, o2, s, wheelFrictions[j]);
+            //     };
         }
         for (int j = k + 1; j < 2 * ROBOT_COUNT; j++)
         {            

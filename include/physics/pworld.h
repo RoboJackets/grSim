@@ -23,6 +23,8 @@ Copyright (C) 2011, Parsian Robotic Center (eew.aut.ac.ir/~parsian/grsim)
 #include <QMap>
 #include <QVector>
 
+#include <functional>
+
 class PSurface;
 class PWorld
 {
@@ -61,6 +63,7 @@ public:
     bool usefdir1;   //if true use fdir1 instead of ODE value
     dVector3 fdir1;  //fdir1 is a normalized vector tangent to friction force vector
     dVector3 contactPos,contactNormal;
-    PSurfaceCallback* callback;
+    // PSurfaceCallback* callback;
+    std::function<bool(dGeomID, dGeomID, PSurface*)> callback;
 };
 #endif // PWORLD_H

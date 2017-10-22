@@ -102,7 +102,14 @@ public:
     double RollerTorqueFactor;
     double RollerPerpendicularTorqueFactor;
     double Kicker_Friction;
-    double WheelTangentFriction;
+    double WheelTangentFriction1;
+    double WheelTangentFriction2;
+    double WheelTangentFriction3;
+    double WheelTangentFriction4;
+    double WheelHeightOffset1;
+    double WheelHeightOffset2;
+    double WheelHeightOffset3;
+    double WheelHeightOffset4;
     double WheelPerpendicularFriction;
     double Wheel_Motor_FMax;
 };
