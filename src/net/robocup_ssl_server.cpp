@@ -33,6 +33,8 @@ RoboCupSSLServer::RoboCupSSLServer(QObject *parent, const quint16 &port, const s
     _net_interface(new QNetworkInterface(QNetworkInterface::interfaceFromName(QString(net_interface.c_str()))))
 {
     _socket->setSocketOption(QAbstractSocket::MulticastTtlOption, 1);
+    // Multicast loopback?
+    _socket->setSocketOption(QAbstractSocket::MulticastLoopbackOption, 1);
 }
 
 RoboCupSSLServer::~RoboCupSSLServer()
