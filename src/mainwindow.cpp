@@ -519,3 +519,7 @@ void MainWindow::recvActions()
     glwidget->ssl->recvActions();
 }
 
+void MainWindow::setIsGlEnabled(bool value)
+{
+  glwidget->ssl->isGLEnabled = value;
+}

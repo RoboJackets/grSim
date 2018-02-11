@@ -62,11 +62,19 @@ refactor variable names
 
 int main(int argc, char *argv[])
 {
+	char** argend = argc + argv;
+
     QCoreApplication::setOrganizationName("Parsian");
     QCoreApplication::setOrganizationDomain("parsian-robotics.com");
     QCoreApplication::setApplicationName("grSim");
     QApplication a(argc, argv);
     MainWindow w;
-    w.show();
-    return a.exec();
+
+	if (std::find(argv, argend, std::string("-headless")) == argend) {
+      w.show();
+	} else {
+      w.hide();
+      w.setIsGlEnabled(false);
+	}
+	return a.exec();
 }
