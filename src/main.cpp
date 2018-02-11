@@ -73,6 +73,7 @@ int main(int argc, char *argv[])
     }
     else {
       w.hide();
+      w.setIsGlEnabled(false);
     }
     return a.exec();
 }
