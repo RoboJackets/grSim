@@ -629,7 +629,7 @@ void SSLWorld::recvActions()
 
     // send status regardless of whether or not we received any commands
     for (int team = 0; team <= 1; ++team) {
-        for (int id = 0; id < ROBOT_COUNT; ++id) {
+        for (int id = 0; id < cfg->Robots_Count(); ++id) {
             char status = 0;
             status = id;
 
