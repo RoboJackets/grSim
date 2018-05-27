@@ -133,7 +133,7 @@ bool ballCallBack(dGeomID o1,dGeomID o2,PSurface* s, int /*robots_count*/)
 SSLWorld::SSLWorld(QGLWidget* parent,ConfigWidget* _cfg,RobotsFomation *form1,RobotsFomation *form2)
     : QObject(parent)
 {    
-    isGLEnabled = true;
+    isGLEnabled = false;
     customDT = -1;    
     _w = this;
     cfg = _cfg;
