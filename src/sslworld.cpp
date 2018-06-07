@@ -640,8 +640,7 @@ void SSLWorld::recvActions()
 
             for (std::size_t i = 0; i < 4; ++i) {
                 auto wheel_speed_rad_s = robots[i]->getSpeed(i);
-                printf("Wheel speed %f\r\n", wheel_speed_rad_s);
-                auto enc_speed = static_cast<int32_t>(wheel_speed_rad_s * 2048 * 3 / (2 * M_PI));
+                auto enc_speed = static_cast<int32_t>((1.0/60) * wheel_speed_rad_s * 2048 * 3 / (2 * M_PI));
                 packet->add_encoders(enc_speed);
             }
 
