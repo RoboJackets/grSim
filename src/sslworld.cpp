@@ -28,6 +28,7 @@ Copyright (C) 2011, Parsian Robotic Center (eew.aut.ac.ir/~parsian/grsim)
 #include "grSim_Packet.pb.h"
 #include "grSim_Commands.pb.h"
 #include "grSim_Replacement.pb.h"
+#include "grSim_Status.pb.h"
 #include "messages_robocup_ssl_detection.pb.h"
 #include "messages_robocup_ssl_geometry.pb.h"
 #include "messages_robocup_ssl_refbox_log.pb.h"
@@ -630,21 +631,37 @@ void SSLWorld::recvActions()
     // send status regardless of whether or not we received any commands
     for (int team = 0; team <= 1; ++team) {
         for (int id = 0; id < cfg->Robots_Count(); ++id) {
-            char status = 0;
-            status = id;
+            // populate BotRx packet with status information
+            grSim_Status* packet = new grSim_Status;
 
-            const uint8_t touching_ball = 0x1 << 3;
-            const uint8_t just_kicked = 0x1 << 4;
-            const uint8_t robot_on = 0x1 << 5;
+            packet->set_robot_id(id);
+            packet->set_ball_sensed(robots[id]->kicker->isTouchingBall());
+            packet->set_just_kicked(robots[id]->kicker->justKicked());
 
-            if (robots[id]->kicker->isTouchingBall()) status = status | touching_ball;
-            if (robots[id]->kicker->justKicked()) status |= just_kicked;
-            if (robots[id]->on) status = status |= robot_on;
+            for (std::size_t i = 0; i < 4; ++i) {
+                auto wheel_speed_rad_s = robots[i]->getSpeed(i);
+                printf("Wheel speed %f\r\n", wheel_speed_rad_s);
+                auto enc_speed = static_cast<int32_t>(wheel_speed_rad_s * 2048 * 3 / (2 * M_PI));
+                packet->add_encoders(enc_speed);
+            }
 
-            if (team == 0)
-                blueStatusSocket->writeDatagram(&status,1,sender,cfg->BlueStatusSendPort());
-            else
-                yellowStatusSocket->writeDatagram(&status,1,sender,cfg->YellowStatusSendPort());
+            size_t size = packet->ByteSizeLong(); 
+            std::ostringstream stream;
+            packet->SerializeToOstream(&stream);
+
+            std::string str_buf = stream.str();
+            const char* ctext = str_buf.c_str();
+
+            if (team == 0) {
+                blueStatusSocket->writeDatagram(ctext,str_buf.size(),sender,cfg->BlueStatusSendPort());
+            } else {
+                yellowStatusSocket->writeDatagram(ctext,str_buf.size(),sender,cfg->YellowStatusSendPort());
+            }
+
+            // if (team == 0)
+                // blueStatusSocket->writeDatagram(&status,1,sender,cfg->BlueStatusSendPort());
+            // else
+                // yellowStatusSocket->writeDatagram(&status,1,sender,cfg->YellowStatusSendPort());
         }
     }
 }

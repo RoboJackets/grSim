@@ -18,6 +18,8 @@ Copyright (C) 2011, Parsian Robotic Center (eew.aut.ac.ir/~parsian/grsim)
 
 #include "configwidget.h"
 
+#include <QFileInfo>
+
 #ifdef HAVE_MACOSX
 
 #define ADD_ENUM(type,name,Defaultvalue,namestring) \
@@ -214,7 +216,8 @@ void ConfigWidget::loadRobotsSettings()
 
 void ConfigWidget::loadRobotSettings(QString team)
 {
-    QString ss = qApp->applicationDirPath()+QString("/../config/")+QString("%1.ini").arg(team);
+    QString ss = qApp->applicationDirPath()+QString("/%1.ini").arg(team);
+    std::cout << ss.toUtf8().constData() << std::endl;
     robot_settings = new QSettings(ss, QSettings::IniFormat);
     robotSettings.RobotCenterFromKicker = robot_settings->value("Geometery/CenterFromKicker", 0.073).toDouble();
     robotSettings.RobotRadius = robot_settings->value("Geometery/Radius", 0.09).toDouble();
