@@ -98,9 +98,9 @@ ConfigWidget::ConfigWidget()
   ADD_VALUE(div_b_vars, Double, DivB_Goal_Width,1.000,"Goal width")
   ADD_VALUE(div_b_vars, Double, DivB_Goal_Height,0.160,"Goal height")
 
-  ADD_ENUM(StringEnum,YellowTeam,"Parsian","Yellow Team");
+  ADD_ENUM(StringEnum,YellowTeam,"robojackets-grsim","Yellow Team");
   END_ENUM(geo_vars,YellowTeam)
-  ADD_ENUM(StringEnum,BlueTeam,"Parsian","Blue Team");
+  ADD_ENUM(StringEnum,BlueTeam,"robojackets-grsim","Blue Team");
   END_ENUM(geo_vars,BlueTeam)
 
     VarListPtr ballg_vars(new VarList("Ball"));
@@ -218,6 +218,7 @@ void ConfigWidget::loadRobotSettings(QString team)
 {
     QString ss = qApp->applicationDirPath()+QString("/%1.ini").arg(team);
     std::cout << ss.toUtf8().constData() << std::endl;
+    std::cout<< "test"<<endl;
     robot_settings = new QSettings(ss, QSettings::IniFormat);
     robotSettings.RobotCenterFromKicker = robot_settings->value("Geometery/CenterFromKicker", 0.073).toDouble();
     robotSettings.RobotRadius = robot_settings->value("Geometery/Radius", 0.09).toDouble();

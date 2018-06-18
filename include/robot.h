@@ -88,7 +88,9 @@ public:
     void drawLabel();
     void setSpeed(int i,dReal s); //i = 0,1,2,3
     void setSpeed(dReal vx, dReal vy, dReal vw);
-    dReal getSpeed(int i);
+    std::array<dReal, 3> getSpeed();
+    dReal getWheelSpeed(int i);
+
     void incSpeed(int i,dReal v);
     void resetSpeeds();
     void resetRobot();

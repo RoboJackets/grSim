@@ -440,7 +440,7 @@ void Robot::setSpeed(dReal vx, dReal vy, dReal vw)
     setSpeed(3 , dw4);
 }
 
-dReal Robot::getSpeed(int i)
+dReal Robot::getWheelSpeed(int i)
 {
     if ((i>=4) || (i<0)) return -1;
     return wheels[i]->speed;
@@ -450,5 +450,10 @@ void Robot::incSpeed(int i,dReal v)
 {
     if (!((i>=4) || (i<0)))
         wheels[i]->speed += v;
+}
+
+std::array<dReal, 3> Robot::getSpeed() {
+    const auto speed = dBodyGetLinearVel(this->chassis->body);
+    return array<dReal, 3>{speed[0], speed[1], speed[2]};
 }
 

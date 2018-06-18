@@ -37,9 +37,10 @@ Copyright (C) 2011, Parsian Robotic Center (eew.aut.ac.ir/~parsian/grsim)
 
 #include "robot.h"
 #include "configwidget.h"
+#include <sys/time.h>
+#include <chrono>
 
 #include "config.h"
-
 #define WALL_COUNT 10
 
 class RobotsFomation;
@@ -59,7 +60,8 @@ private:
     dReal last_dt;
     QList<SendingPacket*> sendQueue;
     char packet[200];
-    char *in_buffer;    
+    char *in_buffer;
+    std::chrono::system_clock::time_point last_send_time = std::chrono::system_clock::time_point::min();
 public:    
     dReal customDT;
     bool isGLEnabled;

@@ -23,7 +23,7 @@ int main(int argc, char *argv[])
 {
     char** argend = argc + argv;
 
-    QCoreApplication::setOrganizationName("Parsian");
+    QCoreApplication::setOrganizationName("robojackets-grsim");
     QCoreApplication::setOrganizationDomain("parsian-robotics.com");
     QCoreApplication::setApplicationName("grSim");
     QApplication a(argc, argv);

@@ -47,8 +47,9 @@ set(libs)
 
 # OpenGL
 find_package(OpenGL REQUIRED)
-include_directories(${OPENGL_INCLUDE_DIR})
-list(APPEND libs ${OPENGL_LIBRARIES})
+find_package(Eigen3 REQUIRED)
+include_directories(${OPENGL_INCLUDE_DIR} ${EIGEN3_INCLUDE_DIR})
+list(APPEND libs ${OPENGL_LIBRARIES} ${EIGEN3_LIBRARIES})
 #find_package(GLUT REQUIRED)
 #include_directories(${GLUT_INCLUDE_DIR})
 
