@@ -629,9 +629,13 @@ void SSLWorld::recvActions()
 
     // send status regardless of whether or not we received any commands
     for (int team = 0; team <= 1; ++team) {
-        for (int id = 0; id < cfg->Robots_Count(); ++id) {
+        // grSim tracks which team a robot is on by where they are in
+        // the robot array, this lets grSim get robot with this id from
+        // the right team
+        int startId = team * cfg->Robots_Count();
+        for (int id = startId; id < startId + cfg->Robots_Count(); ++id) {
             char status = 0;
-            status = id;
+            status = id - startId;
 
             const uint8_t touching_ball = 0x1 << 3;
             const uint8_t just_kicked = 0x1 << 4;
