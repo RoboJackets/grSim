@@ -1,10 +1,26 @@
-cmake_minimum_required(VERSION 2.8)
+cmake_minimum_required(VERSION 3.10)
 
 ## Project branding, version and package mantainer
 project(grSim)
 set(VERSION "1.0.0a2")
 #set(VENDOR "Parsian")
 set(MAINTAINER "Mani Monajjemi <mani.monajjemi@gmail.com>")
+
+# Default to C99
+if(NOT CMAKE_C_STANDARD)
+  set(CMAKE_C_STANDARD 99)
+endif()
+
+# Default to C++14
+if(NOT CMAKE_CXX_STANDARD)
+  set(CMAKE_CXX_STANDARD 14)
+endif()
+
+if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+  add_compile_options(-Wall -Wextra -Wpedantic)
+endif()
+
+find_package(ament_cmake REQUIRED)
 
 # some utils and helper vars
 string(TOLOWER ${CMAKE_PROJECT_NAME} CMAKE_PROJECT_NAME_LOWER)
@@ -180,7 +196,7 @@ file(GLOB CONFIG_FILES "config/*.ini")
 set_source_files_properties(${CONFIG_FILES}  PROPERTIES MACOSX_PACKAGE_LOCATION "config")
 
 if(APPLE)
-    set(app grsim)
+    set(app ${CMAKE_PROJECT_NAME})
     add_executable(${app} MACOSX_BUNDLE ${srcs})
     target_link_libraries(${app} ${libs})
     install(TARGETS ${app} DESTINATION .)
@@ -196,7 +212,7 @@ if(APPLE)
         COMPONENT Runtime)
     set(CPACK_GENERATOR "DragNDrop" "TGZ")
 elseif(WIN32)
-    set(app grsim)
+    set(app ${CMAKE_PROJECT_NAME})
     add_executable(${app} WIN32 ${srcs})
     target_link_libraries(${app} ${libs})
     install(TARGETS ${app} DESTINATION bin)
@@ -205,7 +221,7 @@ elseif(WIN32)
             FILES_MATCHING PATTERN "*.dll")
     set(CPACK_PACKAGE_EXECUTABLES ${app} ${app})
 else()
-    set(app grsim)
+    set(app ${CMAKE_PROJECT_NAME_LOWER})
     add_executable(${app} ${srcs})
     set_target_properties(${app} 
         PROPERTIES OUTPUT_NAME "grsim")
@@ -256,3 +272,12 @@ endif()
 include(CPack)
 
 
+install(TARGETS vartypes
+    ARCHIVE DESTINATION lib
+    LIBRARY DESTINATION lib
+    RUNTIME DESTINATION bin)
+
+install(TARGETS grsim
+    DESTINATION lib/${PROJECT_NAME})
+
+ament_package()
