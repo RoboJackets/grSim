@@ -15,7 +15,7 @@ include(${PROJECT_SOURCE_DIR}/cmake/Utils.cmake)
 standard_config()
 standard_paths(${PROJECT_SOURCE_DIR} bin lib)
 
-set(app ${CMAKE_PROJECT_NAME})
+set(app grSim)
 # create the target before the sources list is known so that we can call
 # add_dependencies(<target> external_proj)
 add_executable(${app} "")
@@ -77,18 +77,21 @@ find_package(VarTypes)
 
 if(NOT VARTYPES_FOUND)
   include(ExternalProject)
+
   set(VARTYPES_INSTALL_DIR "${CMAKE_CURRENT_BINARY_DIR}/vartypes_install")
+  set(VARTYPES_INCLUDE_DIRS "${VARTYPES_INSTALL_DIR}/include")
+  set(VARTYPE_LIB_NAME ${CMAKE_STATIC_LIBRARY_PREFIX}vartypes${CMAKE_STATIC_LIBRARY_SUFFIX})
+  set(VARTYPES_LIBRARIES "${VARTYPES_INSTALL_DIR}/lib/${VARTYPE_LIB_NAME}")
+
   ExternalProject_Add(vartypes_external
     GIT_REPOSITORY    https://github.com/jpfeltracco/vartypes
     GIT_TAG           origin/jpfeltracco/build_static
     INSTALL_DIR       "${VARTYPES_INSTALL_DIR}"
+    BUILD_BYPRODUCTS  "${VARTYPES_LIBRARIES}"
     CMAKE_ARGS        "-DVARTYPES_BUILD_STATIC=ON;-DCMAKE_INSTALL_PREFIX=<INSTALL_DIR>"
   )
+  message(${VARTYPES_INSTALL_DIR})
   add_dependencies(${app} vartypes_external)
-
-  set(VARTYPES_INCLUDE_DIRS "${VARTYPES_INSTALL_DIR}/include")
-  set(VARTYPE_LIB_NAME ${CMAKE_STATIC_LIBRARY_PREFIX}vartypes${CMAKE_STATIC_LIBRARY_SUFFIX})
-  set(VARTYPES_LIBRARIES "${VARTYPES_INSTALL_DIR}/lib/${VARTYPE_LIB_NAME}")
 endif()
 
 target_include_directories(${app} PRIVATE ${VARTYPES_INCLUDE_DIRS})
