@@ -666,7 +666,12 @@ void SSLWorld::recvActions()
                 int id = robotIndex(i, team);
                 bool isInfrared = robots[id]->kicker->isTouchingBall();
                 KickStatus kicking = robots[id]->kicker->isKicking();
+                // This check is disabled because the RoboJackets fork relies on
+                // constantly sending return packets so that we know the
+                // simulator still is connected to soccer.
+#if 0
                 if (isInfrared != lastInfraredState[team][i] || kicking != lastKickState[team][i])
+#endif
                 {
                     updateRobotStatus = true;
                     addRobotStatus(robotsPacket, i, team, isInfrared, kicking);
