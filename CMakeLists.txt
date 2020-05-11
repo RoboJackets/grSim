@@ -13,7 +13,10 @@ string(TOLOWER ${CMAKE_PROJECT_NAME} CMAKE_PROJECT_NAME_LOWER)
 set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake/modules)
 include(${PROJECT_SOURCE_DIR}/cmake/Utils.cmake)
 standard_config()
-standard_paths(${PROJECT_SOURCE_DIR} bin lib)
+
+# Don't install to bin/ or lib/ because we later override the install directory
+# in robocup-software (to put it in `run`)
+# standard_paths(${PROJECT_SOURCE_DIR} bin lib)
 
 set(app grSim)
 # create the target before the sources list is known so that we can call
