@@ -18,23 +18,11 @@ Copyright (C) 2011, Parsian Robotic Center (eew.aut.ac.ir/~parsian/grsim)
 
 #include "configwidget.h"
 
-#ifdef HAVE_MACOSX
-
 #define ADD_ENUM(type,name,Defaultvalue,namestring) \
     v_##name = std::shared_ptr<Var##type>(new Var##type(namestring,Defaultvalue));
 #define ADD_VALUE(parent,type,name,defaultvalue,namestring) \
     v_##name = std::shared_ptr<Var##type>(new Var##type(namestring,defaultvalue)); \
     parent->addChild(v_##name);
-
-#else
-
-#define ADD_ENUM(type,name,Defaultvalue,namestring) \
-    v_##name = std::tr1::shared_ptr<Var##type>(new Var##type(namestring,Defaultvalue));
-#define ADD_VALUE(parent,type,name,defaultvalue,namestring) \
-    v_##name = std::tr1::shared_ptr<Var##type>(new Var##type(namestring,defaultvalue)); \
-    parent->addChild(v_##name);
-
-#endif
 
 #define END_ENUM(parents, name) \
     parents->addChild(v_##name);
@@ -112,6 +100,7 @@ ConfigWidget::ConfigWidget()
         ADD_VALUE(worldp_vars,Bool,SyncWithGL,false,"Synchronize ODE with OpenGL")
         ADD_VALUE(worldp_vars,Double,DeltaTime,0.016,"ODE time step")
         ADD_VALUE(worldp_vars,Double,Gravity,9.8,"Gravity")
+        ADD_VALUE(worldp_vars,Bool,ResetTurnOver,true,"Auto reset turn-over")
   VarListPtr ballp_vars(new VarList("Ball"));
     phys_vars->addChild(ballp_vars);
         ADD_VALUE(ballp_vars,Double,BallMass,0.043,"Ball mass");
@@ -145,7 +134,6 @@ ConfigWidget::ConfigWidget()
     world=VarXML::read(world,(QDir::homePath() + QString("/.grsim.xml")).toStdString());
 
 
-    QDir dir;
     std::string blueteam = v_BlueTeam->getString();
     geo_vars->removeChild(v_BlueTeam);
 
@@ -155,22 +143,18 @@ ConfigWidget::ConfigWidget()
     ADD_ENUM(StringEnum,BlueTeam,blueteam.c_str(),"Blue Team");
     ADD_ENUM(StringEnum,YellowTeam,yellowteam.c_str(),"Yellow Team");
 
-    dir.setCurrent(qApp->applicationDirPath()+"/../config/");
+    auto config_path = "/../config/";
+#ifdef HAVE_LINUX
+    bool grSim_launch_from_system_dir = (qApp->applicationDirPath().indexOf(QDir::homePath()) == -1);
+    if (grSim_launch_from_system_dir)
+      config_path = "/../share/grSim/config/";
+#endif
+    QDir dir;
+    dir.setCurrent(qApp->applicationDirPath() + config_path);
     dir.setNameFilters(QStringList() << "*.ini");
     dir.setSorting(QDir::Size | QDir::Reversed);
     QFileInfoList list = dir.entryInfoList();
-    for (int i = 0; i < list.size(); ++i) {
-        QFileInfo fileInfo = list.at(i);
-        QStringList s = fileInfo.fileName().split(".");
-        QString str;
-        if (s.count() > 0) str = s[0];
-        ADD_TO_ENUM(BlueTeam,str.toStdString())
-        ADD_TO_ENUM(YellowTeam,str.toStdString())
-    }
-    dir.setCurrent(qApp->applicationDirPath()+"/../share/grsim/config/");
-    dir.setNameFilters(QStringList() << "*.ini");
-    dir.setSorting(QDir::Size | QDir::Reversed);
-    list = dir.entryInfoList();
+
     for (int i = 0; i < list.size(); ++i) {
         QFileInfo fileInfo = list.at(i);
         QStringList s = fileInfo.fileName().split(".");
@@ -226,7 +210,14 @@ void ConfigWidget::loadRobotsSettings()
 
 void ConfigWidget::loadRobotSettings(QString team)
 {
-    QString ss = qApp->applicationDirPath()+QString("/../config/")+QString("%1.ini").arg(team);
+    auto config_path = "/../config/";
+#ifdef HAVE_LINUX
+    bool grSim_launch_from_system_dir = (qApp->applicationDirPath().indexOf(QDir::homePath()) == -1);
+    if (grSim_launch_from_system_dir)
+      config_path = "/../share/grSim/config/";
+#endif
+
+    QString ss = qApp->applicationDirPath()+QString(config_path)+QString("%1.ini").arg(team);
     robot_settings = new QSettings(ss, QSettings::IniFormat);
     robotSettings.RobotCenterFromKicker = robot_settings->value("Geometery/CenterFromKicker", 0.073).toDouble();
     robotSettings.RobotRadius = robot_settings->value("Geometery/Radius", 0.09).toDouble();
@@ -243,9 +234,9 @@ void ConfigWidget::loadRobotSettings(QString team)
     robotSettings.Wheel3Angle = robot_settings->value("Geometery/Wheel3Angle", 225).toDouble();
     robotSettings.Wheel4Angle = robot_settings->value("Geometery/Wheel4Angle", 300).toDouble();
 
-    robotSettings.BodyMass  = robot_settings->value("Physics/BodyMass", 2).toDouble();
+    robotSettings.BodyMass = robot_settings->value("Physics/BodyMass", 2).toDouble();
     robotSettings.WheelMass = robot_settings->value("Physics/WheelMass", 0.2).toDouble();
-    robotSettings.KickerMass= robot_settings->value("Physics/KickerMass",0.02).toDouble();
+    robotSettings.KickerMass = robot_settings->value("Physics/KickerMass", 0.02).toDouble();
     robotSettings.KickerDampFactor = robot_settings->value("Physics/KickerDampFactor", 0.2f).toDouble();
     robotSettings.RollerTorqueFactor = robot_settings->value("Physics/RollerTorqueFactor", 0.06f).toDouble();
     robotSettings.RollerPerpendicularTorqueFactor = robot_settings->value("Physics/RollerPerpendicularTorqueFactor", 0.005f).toDouble();

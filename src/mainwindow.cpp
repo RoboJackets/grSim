@@ -32,10 +32,8 @@ Copyright (C) 2011, Parsian Robotic Center (eew.aut.ac.ir/~parsian/grsim)
 #include <QDir>
 #include <QClipboard>
 
-#ifdef QT5
 #include <QStatusBar>
 #include <QMessageBox>
-#endif
 
 #include "mainwindow.h"
 #include "logger.h"
@@ -64,11 +62,7 @@ MainWindow::MainWindow(QWidget *parent)
     initLogger((void*)printer);
 
     /* Init Workspace */
-#ifdef QT5
     workspace = new QMdiArea(this);
-#else
-    workspace = new QWorkspace(this);
-#endif
     setCentralWidget(workspace);    
 
     /* Widgets */
@@ -174,11 +168,7 @@ MainWindow::MainWindow(QWidget *parent)
     addDockWidget(Qt::BottomDockWidgetArea, statusWidget);
     addDockWidget(Qt::LeftDockWidgetArea, robotwidget);
 
-#ifdef QT5
     workspace->addSubWindow(glwidget, Qt::CustomizeWindowHint | Qt::WindowTitleHint | Qt::WindowSystemMenuHint | Qt::WindowMinimizeButtonHint | Qt::WindowMaximizeButtonHint);
-#else
-   workspace->addWindow(glwidget, Qt::CustomizeWindowHint | Qt::WindowTitleHint | Qt::WindowSystemMenuHint | Qt::WindowMinimizeButtonHint | Qt::WindowMaximizeButtonHint);
-#endif    
 
     glwidget->setWindowState(Qt::WindowMaximized);
 
@@ -339,17 +329,21 @@ void MainWindow::update()
 
     int R = robotIndex(glwidget->Current_robot,glwidget->Current_team);
 
-    const dReal* vv = dBodyGetLinearVel(glwidget->ssl->robots[R]->chassis->body);
-    static dVector3 lvv;
-    dVector3 aa;
-    aa[0]=(vv[0]-lvv[0])/configwidget->DeltaTime();
-    aa[1]=(vv[1]-lvv[1])/configwidget->DeltaTime();
-    aa[2]=(vv[2]-lvv[2])/configwidget->DeltaTime();
-    robotwidget->vellabel->setText(QString::number(sqrt(vv[0]*vv[0]+vv[1]*vv[1]+vv[2]*vv[2]),'f',3));
-    robotwidget->acclabel->setText(QString::number(sqrt(aa[0]*aa[0]+aa[1]*aa[1]+aa[2]*aa[2]),'f',3));
-    lvv[0]=vv[0];
-    lvv[1]=vv[1];
-    lvv[2]=vv[2];
+    if(0 <= R)
+    {
+        const dReal* vv = dBodyGetLinearVel(glwidget->ssl->robots[R]->chassis->body);
+        static dVector3 lvv;
+        dVector3 aa;
+        aa[0]=(vv[0]-lvv[0])/configwidget->DeltaTime();
+        aa[1]=(vv[1]-lvv[1])/configwidget->DeltaTime();
+        aa[2]=(vv[2]-lvv[2])/configwidget->DeltaTime();
+        robotwidget->vellabel->setText(QString::number(sqrt(vv[0]*vv[0]+vv[1]*vv[1]+vv[2]*vv[2]),'f',3));
+        robotwidget->acclabel->setText(QString::number(sqrt(aa[0]*aa[0]+aa[1]*aa[1]+aa[2]*aa[2]),'f',3));
+        lvv[0]=vv[0];
+        lvv[1]=vv[1];
+        lvv[2]=vv[2];
+    }
+    
     QString ss;
     fpslabel->setText(QString("Frame rate: %1 fps").arg(ss.sprintf("%06.2f",glwidget->getFPS())));        
     if (glwidget->ssl->selected!=-1)
@@ -453,11 +447,7 @@ void MainWindow::toggleFullScreen(bool a)
     }
     else {
         view->close(); 
-#ifdef QT5
         workspace->addSubWindow(glwidget, Qt::CustomizeWindowHint | Qt::WindowTitleHint | Qt::WindowSystemMenuHint | Qt::WindowMinimizeButtonHint | Qt::WindowMaximizeButtonHint);
-#else
-        workspace->addWindow(glwidget, Qt::CustomizeWindowHint | Qt::WindowTitleHint | Qt::WindowSystemMenuHint | Qt::WindowMinimizeButtonHint | Qt::WindowMaximizeButtonHint);
-#endif
         glwidget->show();
         glwidget->resize(lastSize);
         glwidget->fullScreen = false;
@@ -511,8 +501,8 @@ void MainWindow::reconnectBlueStatusSocket()
         delete blueStatusSocket;
     }
     blueStatusSocket = new QUdpSocket(this);
-    if (blueStatusSocket->bind(QHostAddress::Any,configwidget->BlueStatusSendPort()))
-        logStatus(QString("Status send port binded for Blue Team on: %1").arg(configwidget->BlueStatusSendPort()),QColor("green"));
+    // if (blueStatusSocket->bind(QHostAddress::Any,configwidget->BlueStatusSendPort()))
+    //     logStatus(QString("Status send port binded for Blue Team on: %1").arg(configwidget->BlueStatusSendPort()),QColor("green"));
 }
 
 void MainWindow::reconnectYellowStatusSocket()
@@ -522,8 +512,8 @@ void MainWindow::reconnectYellowStatusSocket()
         delete yellowStatusSocket;
     }
     yellowStatusSocket = new QUdpSocket(this);
-    if (yellowStatusSocket->bind(QHostAddress::Any,configwidget->YellowStatusSendPort()))
-        logStatus(QString("Status send port binded for Yellow Team on: %1").arg(configwidget->YellowStatusSendPort()),QColor("green"));
+    // if (yellowStatusSocket->bind(QHostAddress::Any,configwidget->YellowStatusSendPort()))
+    //     logStatus(QString("Status send port binded for Yellow Team on: %1").arg(configwidget->YellowStatusSendPort()),QColor("green"));
 }
 
 void MainWindow::reconnectCommandSocket()

@@ -10,11 +10,11 @@ GrSim is written in C++, in order to compile it, you will need a working toolcha
 
 GrSim depends on:
 
-- [CMake](https://cmake.org/) version 2.8+ 
+- [CMake](https://cmake.org/) version 3.5+ 
 - [OpenGL](https://www.opengl.org)
-- [Qt4 Development Libraries](https://www.qt.io) version 4.8+
+- [Qt5 Development Libraries](https://www.qt.io)
 - [Open Dynamics Engine (ODE)](http://www.ode.org)
-- [VarTypes Library](https://github.com/szi/vartypes)
+- [VarTypes Library](https://github.com/jpfeltracco/vartypes) forked from [Szi's Vartypes](https://github.com/szi/vartypes)
 - [Google Protobuf](https://github.com/google/protobuf)
 - [Boost development libraries](http://www.boost.org/) (needed by VarTypes)
 
@@ -25,14 +25,14 @@ GrSim depends on:
 If you run a Debian system, or derivative, first ensure that these dependencies are there:
 
 ```bash
-$ sudo apt-get install git build-essential cmake libqt4-dev libgl1-mesa-dev libglu1-mesa-dev libprotobuf-dev protobuf-compiler libode-dev libboost-dev
+$ sudo apt-get install git build-essential cmake qt5-default libqt5opengl5-dev libgl1-mesa-dev libglu1-mesa-dev libprotobuf-dev protobuf-compiler libode-dev libboost-dev
 ```
 
 Next compile and install VarTypes from source. In the following we install VarTypes from source using `git`.
 
 ```bash
 $ cd /tmp
-$ git clone https://github.com/szi/vartypes.git 
+$ git clone https://github.com/jpfeltracco/vartypes.git
 $ cd vartypes
 $ mkdir build
 $ cd build
@@ -45,7 +45,7 @@ Next, clone grSim into your preferred location.
 
 ```bash
 $ cd /path/to/grsim_ws
-$ git clone https://github.com/mani-monaj/grSim.git
+$ git clone https://github.com/RoboCup-SSL/grSim.git
 $ cd grSim
 ```
 
@@ -80,31 +80,28 @@ Pre-requirements:
 First ensure the dependencies are there:
 
 ```bash
-$ brew install cmake
-$ brew install ode --with-double-precision
-$ brew tap cartr/qt4
-$ brew tap-pin cartr/qt4
-$ brew install qt@4  
-$ brew install protobuf
+brew install cmake
+brew tap robotology/formulae         
+brew install robotology/formulae/ode 
+brew install qt
+brew install protobuf
 ```
 
 If you run into build issues, you may need to run this first:
 
 ```bash
-$ brew update
-$ brew doctor
+brew update
+brew doctor
 ```
 
 Next we need to install VarTypes manually. Please refer to the documentation above for the procedure. 
-
-**IMPORTANT NOTE:** VarTypes currently does not compile on MacOS. Please use the following fork of Vartypes instead of the official repository: `https://github.com/lordhippo/vartypes.git (branch: osx-fix)`
 
 The steps to compile grSim on Mac OS is similar to the steps outlines above for Linux:
 
 
 ```bash
 $ cd /path/to/grsim_ws
-$ git clone https://github.com/mani-monaj/grSim.git
+$ git clone https://github.com/Robocup-SSL/grSim.git
 $ cd ./grSim
 $ mkdir build
 $ cd build

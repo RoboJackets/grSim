@@ -304,6 +304,16 @@ SSLWorld::SSLWorld(QGLWidget* parent,ConfigWidget* _cfg,RobotsFomation *form1,Ro
     timer = new QTime();
     timer->start();
     in_buffer = new char [65536];
+
+    // initialize robot state
+    for (int team = 0; team < 2; ++team)
+    {
+        for (int i = 0; i < MAX_ROBOT_COUNT; ++i)
+        {
+            lastInfraredState[team][i] = false;
+            lastKickState[team][i] = NO_KICK; 
+        }
+    }
 }
 
 int SSLWorld::robotIndex(int robot,int team)
@@ -394,7 +404,8 @@ void SSLWorld::step(dReal dt)
 
     if (customDT > 0)
         dt = customDT;
-    g->initScene(m_parent->width(),m_parent->height(),0,0.7,1);//true,0.7,0.7,0.7,0.8);
+    const auto ratio = m_parent->devicePixelRatio();
+    g->initScene(m_parent->width()*ratio,m_parent->height()*ratio,0,0.7,1);
     for (int kk=0;kk<5;kk++)
     {
         const dReal* ballvel = dBodyGetLinearVel(ball->body);
@@ -491,6 +502,49 @@ void SSLWorld::step(dReal dt)
     framenum ++;
 }
 
+void SSLWorld::addRobotStatus(Robots_Status& robotsPacket, int robotID, int team, bool infrared, KickStatus kickStatus)
+{
+    Robot_Status* robot_status = robotsPacket.add_robots_status();
+    robot_status->set_robot_id(robotID);
+
+    if (infrared)
+        robot_status->set_infrared(1);
+    else
+        robot_status->set_infrared(0);
+
+    switch(kickStatus){
+        case NO_KICK:
+            robot_status->set_flat_kick(0);
+            robot_status->set_chip_kick(0);
+            break;
+        case FLAT_KICK:
+            robot_status->set_flat_kick(1);
+            robot_status->set_chip_kick(0);
+            break;
+        case CHIP_KICK:
+            robot_status->set_flat_kick(0);
+            robot_status->set_chip_kick(1);
+            break;
+        default:
+            robot_status->set_flat_kick(0);
+            robot_status->set_chip_kick(0);
+            break;
+    }
+}
+
+void SSLWorld::sendRobotStatus(Robots_Status& robotsPacket, QHostAddress sender, int team)
+{
+    int size = robotsPacket.ByteSize();
+    QByteArray buffer(size, 0);
+    robotsPacket.SerializeToArray(buffer.data(), buffer.size());
+    if (team == 0)
+    {
+        blueStatusSocket->writeDatagram(buffer.data(), buffer.size(), sender, cfg->BlueStatusSendPort());
+    }
+    else{
+        yellowStatusSocket->writeDatagram(buffer.data(), buffer.size(), sender, cfg->YellowStatusSendPort());
+    }
+}
 
 void SSLWorld::recvActions()
 {
@@ -555,16 +609,6 @@ void SSLWorld::recvActions()
                         if (packet.commands().robot_commands(i).spinner()) rolling = 1;
                     }
                     robots[id]->kicker->setRoller(rolling);
-
-                    char status = 0;
-                    status = k;
-                    if (robots[id]->kicker->isTouchingBall()) status = status | 8;
-                    if (robots[id]->on) status = status | 240;
-                    if (team == 0)
-                        blueStatusSocket->writeDatagram(&status,1,sender,cfg->BlueStatusSendPort());
-                    else
-                        yellowStatusSocket->writeDatagram(&status,1,sender,cfg->YellowStatusSendPort());
-
                 }
             }
             if (packet.has_replacement())
@@ -594,16 +638,49 @@ void SSLWorld::recvActions()
                 }
                 if (packet.replacement().has_ball())
                 {
-                    dReal x = 0, y = 0, vx = 0, vy = 0;
+                    dReal x = 0, y = 0, z = 0, vx = 0, vy = 0;
+                    ball->getBodyPosition(x, y, z);
+                    const auto vel_vec = dBodyGetLinearVel(ball->body);
+                    vx = vel_vec[0];
+                    vy = vel_vec[1];
+
                     if (packet.replacement().ball().has_x())  x  = packet.replacement().ball().x();
                     if (packet.replacement().ball().has_y())  y  = packet.replacement().ball().y();
                     if (packet.replacement().ball().has_vx()) vx = packet.replacement().ball().vx();
                     if (packet.replacement().ball().has_vy()) vy = packet.replacement().ball().vy();
+
                     ball->setBodyPosition(x,y,cfg->BallRadius()*1.2);
                     dBodySetLinearVel(ball->body,vx,vy,0);
                     dBodySetAngularVel(ball->body,0,0,0);
                 }
             }
+        }
+
+        // send robot status
+        for (int team = 0; team < 2; ++team)
+        {
+            Robots_Status robotsPacket;
+            bool updateRobotStatus = false;
+            for (int i = 0; i < this->cfg->Robots_Count(); ++i)
+            {
+                int id = robotIndex(i, team);
+                bool isInfrared = robots[id]->kicker->isTouchingBall();
+                KickStatus kicking = robots[id]->kicker->isKicking();
+                // This check is disabled because the RoboJackets fork relies on
+                // constantly sending return packets so that we know the
+                // simulator still is connected to soccer.
+#if 0
+                if (isInfrared != lastInfraredState[team][i] || kicking != lastKickState[team][i])
+#endif
+                {
+                    updateRobotStatus = true;
+                    addRobotStatus(robotsPacket, i, team, isInfrared, kicking);
+                    lastInfraredState[team][i] = isInfrared;
+                    lastKickState[team][i] = kicking;
+                }
+            }
+            if (updateRobotStatus)
+                sendRobotStatus(robotsPacket, sender, team);
         }
     }
 }
@@ -641,7 +718,7 @@ bool SSLWorld::visibleInCam(int id, double x, double y)
 SSL_WrapperPacket* SSLWorld::generatePacket(int cam_id)
 {
     SSL_WrapperPacket* packet = new SSL_WrapperPacket;
-    dReal x,y,z,dir;
+    dReal x,y,z,dir,k;
     ball->getBodyPosition(x,y,z);    
     packet->mutable_detection()->set_camera_id(cam_id);
     packet->mutable_detection()->set_frame_number(framenum);    
@@ -699,7 +776,13 @@ SSL_WrapperPacket* SSLWorld::generatePacket(int cam_id)
         {
             if (!robots[i]->on) continue;
             robots[i]->getXY(x,y);
-            dir = robots[i]->getDir();
+            dir = robots[i]->getDir(k);
+            // reset when the robot has turned over
+            if (cfg->ResetTurnOver()) {
+                if (k < 0.9) {
+                    robots[i]->resetRobot();
+                }
+            }
             if (visibleInCam(cam_id, x, y)) {
                 SSL_DetectionRobot* rob = packet->mutable_detection()->add_robots_blue();
                 rob->set_robot_id(i);
@@ -717,7 +800,13 @@ SSL_WrapperPacket* SSLWorld::generatePacket(int cam_id)
         {
             if (!robots[i]->on) continue;
             robots[i]->getXY(x,y);
-            dir = robots[i]->getDir();
+            dir = robots[i]->getDir(k);
+            // reset when the robot has turned over
+            if (cfg->ResetTurnOver()) {
+                if (k < 0.9) {
+                    robots[i]->resetRobot();
+                }
+            }
             if (visibleInCam(cam_id, x, y)) {
                 SSL_DetectionRobot* rob = packet->mutable_detection()->add_robots_yellow();
                 rob->set_robot_id(i-cfg->Robots_Count());

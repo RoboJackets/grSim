@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 2.8)
+cmake_minimum_required(VERSION 3.5)
 
 
 ## Project branding, version and package mantainer
@@ -13,8 +13,15 @@ string(TOLOWER ${CMAKE_PROJECT_NAME} CMAKE_PROJECT_NAME_LOWER)
 set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake/modules)
 include(${PROJECT_SOURCE_DIR}/cmake/Utils.cmake)
 standard_config()
-standard_paths(${PROJECT_SOURCE_DIR} bin lib)
 
+# Don't install to bin/ or lib/ because we later override the install directory
+# in robocup-software (to put it in `run`)
+# standard_paths(${PROJECT_SOURCE_DIR} bin lib)
+
+set(app grSim)
+# create the target before the sources list is known so that we can call
+# add_dependencies(<target> external_proj)
+add_executable(${app} "")
 
 # definitions for knowing the OS from the code
 if(MSVC)
@@ -34,7 +41,7 @@ if(UNIX)
 endif()
 
 # set explicitly the c++ standard to use
-set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++03")
+set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
 
 # add src dir to included directories
 include_directories(${PROJECT_SOURCE_DIR}/include)
@@ -55,35 +62,42 @@ list(APPEND libs ${OPENGL_LIBRARIES})
 #include_directories(${GLUT_INCLUDE_DIR})
 
 # Qt
-set(QT_USE_QTNETWORK true)
-set(QT_USE_QTOPENGL true)
-find_package(Qt4 REQUIRED)
-include(${QT_USE_FILE})
-list(APPEND libs ${QT_LIBRARIES})
+if(APPLE AND EXISTS /usr/local/opt/qt)
+  # Homebrew installs Qt5 (up to at least 5.9.1) in
+  # /usr/local/qt5, ensure it can be found by CMake since
+  # it is not in the default /usr/local prefix.
+  list(APPEND CMAKE_PREFIX_PATH "/usr/local/opt/qt")
+endif()
+find_package(Qt5 COMPONENTS Core Widgets OpenGL Network REQUIRED)
+list(APPEND libs Qt5::Core Qt5::Widgets Qt5::OpenGL Qt5::Network)
 
 # ODE
 find_package(ODE REQUIRED)
-include_directories(${ODE_INCLUDE_DIRS})
-list(APPEND libs ${ODE_LIBRARIES})
-#TODO: make this an option
-option(DOUBLE_PRECISION "Use double precision? If not single precision will be used." ON)
-  if(DOUBLE_PRECISION)
-    if(APPLE)
-      add_definitions(-DdIDEDOUBLE)
-    else()
-      add_definitions(-DdDOUBLE)
-    endif()
-  else()
-    if(APPLE)
-      add_definitions(-DdIDESINGLE)
-    else()
-      add_definitions(-DdSINGLE)
-    endif()
-  endif()
+list(APPEND libs ode::ode)
 
 # VarTypes
-find_package(VarTypes REQUIRED)
-include_directories(${VARTYPES_INCLUDE_DIRS})
+find_package(VarTypes)
+
+if(NOT VARTYPES_FOUND)
+  include(ExternalProject)
+
+  set(VARTYPES_INSTALL_DIR "${CMAKE_CURRENT_BINARY_DIR}/vartypes_install")
+  set(VARTYPES_INCLUDE_DIRS "${VARTYPES_INSTALL_DIR}/include")
+  set(VARTYPE_LIB_NAME ${CMAKE_STATIC_LIBRARY_PREFIX}vartypes${CMAKE_STATIC_LIBRARY_SUFFIX})
+  set(VARTYPES_LIBRARIES "${VARTYPES_INSTALL_DIR}/lib/${VARTYPE_LIB_NAME}")
+
+  ExternalProject_Add(vartypes_external
+    GIT_REPOSITORY    https://github.com/jpfeltracco/vartypes
+    GIT_TAG           origin/jpfeltracco/build_static
+    INSTALL_DIR       "${VARTYPES_INSTALL_DIR}"
+    BUILD_BYPRODUCTS  "${VARTYPES_LIBRARIES}"
+    CMAKE_ARGS        "-DVARTYPES_BUILD_STATIC=ON;-DCMAKE_INSTALL_PREFIX=<INSTALL_DIR>"
+  )
+  message(${VARTYPES_INSTALL_DIR})
+  add_dependencies(${app} vartypes_external)
+endif()
+
+target_include_directories(${app} PRIVATE ${VARTYPES_INCLUDE_DIRS})
 list(APPEND libs ${VARTYPES_LIBRARIES})
 
 # Protobuf
@@ -96,12 +110,13 @@ protobuf_generate_cpp(PROTO_CPP PROTO_H
     src/proto/messages_robocup_ssl_geometry.proto
     src/proto/messages_robocup_ssl_wrapper.proto
     src/proto/messages_robocup_ssl_refbox_log.proto
+    src/proto/messages_robocup_ssl_robot_status.proto
     src/proto/grSim_Replacement.proto
     src/proto/grSim_Commands.proto
     src/proto/grSim_Packet.proto
 )
 
-qt4_add_resources(RESOURCES
+qt5_add_resources(RESOURCES
     resources/textures.qrc
 )
 
@@ -172,39 +187,33 @@ set(srcs
 file(GLOB CONFIG_FILES "config/*.ini")
 set_source_files_properties(${CONFIG_FILES}  PROPERTIES MACOSX_PACKAGE_LOCATION "config")
 
-if(APPLE)
-    set(app ${CMAKE_PROJECT_NAME})
-    add_executable(${app} MACOSX_BUNDLE ${srcs})
-    target_link_libraries(${app} ${libs})
-    install(TARGETS ${app} DESTINATION .)
-    set(MACOSX_BUNDLE_ICON_FILE "${PROJECT_SOURCE_DIR}/resources/icons/grsim.icns")
-    set(MACOSX_BUNDLE_SHORT_VERSION_STRING ${VERSION})
-    set(MACOSX_BUNDLE_VERSION ${VERSION})
-    set(MACOSX_BUNDLE_LONG_VERSION_STRING "Version ${VERSION}")
-    set(BUNDLE_APP ${PROJECT_SOURCE_DIR}/bin/${app}.app)
-    install(
-        CODE "
-        include(BundleUtilities)
-        fixup_bundle(\"${BUNDLE_APP}\"   \"\"   \"/opt/local/lib;/usr/local/lib\")"
-        COMPONENT Runtime)
-    set(CPACK_GENERATOR "DragNDrop" "TGZ")
-elseif(WIN32)
-    set(app ${CMAKE_PROJECT_NAME})
-    add_executable(${app} WIN32 ${srcs})
-    target_link_libraries(${app} ${libs})
-    install(TARGETS ${app} DESTINATION bin)
-    install(DIRECTORY config DESTINATION .)
-    install(DIRECTORY bin DESTINATION .
-            FILES_MATCHING PATTERN "*.dll")
-    set(CPACK_PACKAGE_EXECUTABLES ${app} ${app})
+target_sources(${app} PRIVATE ${srcs})
+install(TARGETS ${app} DESTINATION bin)
+target_link_libraries(${app} ${libs})
+
+if(APPLE AND CMAKE_MACOSX_BUNDLE)
+  # use CMAKE_MACOSX_BUNDLE if you want to build a mac bundle
+  set(MACOSX_BUNDLE_ICON_FILE "${PROJECT_SOURCE_DIR}/resources/icons/grsim.icns")
+  set(MACOSX_BUNDLE_SHORT_VERSION_STRING ${VERSION})
+  set(MACOSX_BUNDLE_VERSION ${VERSION})
+  set(MACOSX_BUNDLE_LONG_VERSION_STRING "Version ${VERSION}")
+  set(BUNDLE_APP ${PROJECT_SOURCE_DIR}/bin/${app}.app)
+  install(
+      CODE "
+      include(BundleUtilities)
+      fixup_bundle(\"${BUNDLE_APP}\"   \"\"   \"/opt/local/lib;/usr/local/lib\")"
+      COMPONENT Runtime)
+  set(CPACK_GENERATOR "DragNDrop" "TGZ")
+elseif(WIN32 AND CMAKE_WIN32_EXECUTABLE)
+  # use CMAKE_WIN32_EXECUTABLE if you want to build a windows exe
+  install(DIRECTORY config DESTINATION .)
+  install(DIRECTORY bin DESTINATION .
+          FILES_MATCHING PATTERN "*.dll")
+  set(CPACK_PACKAGE_EXECUTABLES ${app} ${app})
 else()
-    set(app ${CMAKE_PROJECT_NAME_LOWER})
-    add_executable(${app} ${srcs})
-    target_link_libraries(${app} ${libs})
-    install(TARGETS ${app} DESTINATION bin)
-    install(DIRECTORY config DESTINATION share/${app})
-    install(FILES resources/grsim.desktop DESTINATION share/applications)
-    install(FILES resources/icons/grsim.svg DESTINATION share/icons/hicolor/scalable/apps)
+  install(DIRECTORY config DESTINATION share/${app})
+  install(FILES resources/grsim.desktop DESTINATION share/applications)
+  install(FILES resources/icons/grsim.svg DESTINATION share/icons/hicolor/scalable/apps)
 endif()
 
 option(BUILD_CLIENTS "Choose this option if you want to build the example Qt client." ON)
@@ -238,7 +247,7 @@ set(CPACK_RESOURCE_FILE_README "${CMAKE_BINARY_DIR}/README.txt")
 #set(CPACK_RESOURCE_FILE_WELCOME "${CMAKE_SOURCE_DIR}/WELCOME.txt")
 set(CPACK_PACKAGE_VERSION ${VERSION})
 # Debian based specific
-set(CPACK_DEBIAN_PACKAGE_DEPENDS "libode1 (>=0.11), vartypes (>=0.7.0), libqt4-network (>=4.8.0), libqt4-core, libqt4-gui, libqt4-opengl")
+set(CPACK_DEBIAN_PACKAGE_DEPENDS "libode1 (>=0.11), vartypes (>=0.7.0)")
 if(FLAVOR)
     set(CPACK_PACKAGE_FILE_NAME "${CMAKE_PROJECT_NAME_LOWER}_${CPACK_PACKAGE_VERSION}-${FLAVOR}_${ARCH}")
 else()
