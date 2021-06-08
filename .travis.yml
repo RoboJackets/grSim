@@ -1,24 +1,27 @@
 language: cpp
 
-compiler:
-  - gcc
 
-# by default Ubuntu Precise is included
-# this results on 3 build configurations:
-# Ubuntu Precise and Trusty + Latest OSX image
-matrix:
+jobs:
   include:
     - os: linux
-      dist: trusty
-      sudo: required
+      dist: bionic
+      compiler: clang
     - os: linux
       dist: bionic
-      sudo: required
+      compiler: gcc
     - os: linux
-      dist: xenial
-      sudo: required
+      dist: focal
+      compiler: clang
+    - os: linux
+      dist: focal
+      compiler: gcc
     - os: osx
-      osx_image: xcode11
+      osx_image: xcode11.3
+      compiler: clang
+    - os: osx
+      osx_image: xcode11.3
+      compiler: gcc
+      
 
 addons:
   apt:
