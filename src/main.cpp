@@ -33,6 +33,8 @@ int main(int argc, char *argv[])
     QCommandLineOption headlessOption(QStringList() << "H" << "headless", 
                                       QCoreApplication::translate("main", "Run without a UI"));
     parser.addOption(headlessOption);
+    QCommandLineOption dummyRosArgsOption(QStringList() << "ros-args");
+    parser.addOption(dummyRosArgsOption);
     parser.process(a);
 
     MainWindow w;
